@@ -104,12 +104,32 @@ int main(int argc, const char** argv) {
   2)Invio la frequenza di campionamento
   3)Invio 8 bit corrisponenti ai canali da campionare
   */
+
+  char ack[10]; 
+
+  // wait for avr
+  sleep(2); 
+
   printf("invio mode: %s\n", mode);
-  if(write(fd, mode, sizeof(mode)) < 1) return -1; 
+  while(write(fd, mode, strlen(mode)+1) < 1); 
+  printf("mode inviata\n");
+  memset(ack, 0, sizeof(ack)); // pulisco il buffer
+  read(fd, ack, sizeof(ack)); 
+  printf("ACK mode: %s\n", ack);
+
   printf("invio frequency: %s\n", frequency);
-  if(write(fd, frequency, sizeof(frequency)) < 1) return -1; 
+  while(write(fd, frequency, strlen(frequency)+1) < 1); 
+  printf("frequenza inviata\n");
+  memset(ack, 0, sizeof(ack)); 
+  read(fd, ack, sizeof(ack)); 
+  printf("ACK frequenza: %s\n", ack);
+
   printf("invio channels: %s\n", channels);
-  if(write(fd, channels, sizeof(channels)) < 1) return -1; 
+  while(write(fd, channels, strlen(channels)+1) < 1); 
+  printf("channels inviati\n");
+  memset(ack, 0, sizeof(ack)); 
+  read(fd, ack, sizeof(ack)); 
+  printf("ACK channels: %s\n", ack);
 
   return 0;
   
