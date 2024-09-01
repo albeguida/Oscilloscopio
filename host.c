@@ -1,4 +1,4 @@
-#include "serial_linux.h"
+#include "host.h"
 #include <errno.h>
 #include <termios.h>
 #include <unistd.h>
@@ -8,9 +8,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <iostream>
-#include <string> 
-
+#include <stdint.h>
+//#include <iostream>
+#include <stdlib.h>
 int serial_set_interface_attribs(int fd, int speed, int parity) {
   struct termios tty;
   memset (&tty, 0, sizeof tty);
@@ -53,6 +53,7 @@ int serial_set_interface_attribs(int fd, int speed, int parity) {
     printf ("error %d from tcsetattr", errno);
     return -1;
   }
+  tcflush(fd, TCIOFLUSH);
   return 0;
 }
 
@@ -78,3 +79,44 @@ int serial_open(const char* name) {
   }
   return fd;
 }
+
+int main(int argc, const char** argv) {
+  if (argc < 7) { // Adjusted for additional arguments
+    printf("Usage: serial_linux <serial_file> <baudrate> <read=1, write=0> <mode> <frequency> <channels>\n");
+    return 1;
+  }
+
+
+  const char* serial_device = argv[1];
+  int baudrate = atoi(argv[2]);
+  int read_or_write = atoi(argv[3]);
+
+  const char * mode = argv[4]; 
+  const char * frequency = argv[5]; 
+  const char * channels = argv[6]; 
+
+  int fd = serial_open(serial_device);
+  serial_set_interface_attribs(fd, baudrate, 0);
+  serial_set_blocking(fd, 1);
+
+  /*Protocollo di configurazione
+  1)Invio la modalità di campionamento: 1 --> continuos mode 0 --> buffered mode
+  2)Invio la frequenza di campionamento
+  3)Invio 8 bit corrisponenti ai canali da campionare
+  */
+  printf("invio mode: %s\n", mode);
+  if(write(fd, mode, sizeof(mode)) < 1) return -1; 
+  printf("invio frequency: %s\n", frequency);
+  if(write(fd, frequency, sizeof(frequency)) < 1) return -1; 
+  printf("invio channels: %s\n", channels);
+  if(write(fd, channels, sizeof(channels)) < 1) return -1; 
+
+  return 0;
+  
+}
+
+
+  
+
+  
+

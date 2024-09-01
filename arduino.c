@@ -149,6 +149,7 @@ int main(void) {
     bitmask = atoi((const char *)channels);
     // init ADC and timer
     ADC_init();
+    
     timer_init((1/(uint32_t)atoi((char*)frequency)));
   
     while(1) {
