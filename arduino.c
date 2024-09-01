@@ -139,19 +139,22 @@ int main(void) {
     // init UART
 
     UART_init();
-    // get configuration parameters
+    // get configuration parameters and ACKs
     while(UART_getString(mode) < 1);
-   
+    UART_putString(mode); 
+
     while(UART_getString(frequency) < 1);
+    UART_putString(frequency); 
 
     while(UART_getString(channels) < 1);
+    UART_putString(channels);
+
     // channels bitmask
     bitmask = atoi((const char *)channels);
     // init ADC and timer
+
     ADC_init();
-    
-    timer_init((1/(uint32_t)atoi((char*)frequency)));
-  
+    timer_init((1/((uint32_t)atoi((char*)frequency))));
     while(1) {
       sleep_cpu(); // sleep until interrupt
     }
