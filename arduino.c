@@ -39,7 +39,7 @@ void trigger_wait(void){
     if (int_occurred) {
       break;
     }
-    //sleep_cpu();
+    sleep_cpu();
   }
   return;
 }
@@ -148,7 +148,7 @@ void set_to_zero(uint8_t* buf){
 
 // channel bitmask, it is set in the main
 uint8_t bitmask;
-
+uint32_t bytes_written = 0;
 // ISR for timer 5
 ISR(TIMER5_COMPA_vect) {
   char str[5]; 
@@ -156,22 +156,26 @@ ISR(TIMER5_COMPA_vect) {
     for(int i = 0; i < 8; i++) {
       if(bitmask & (1 << i)) {
         uint8_t value = ADC_read(i);
-        itoa(value, str, 10); // Convert value to string, base 10
+        itoa(value, str, 10); // convert value to string, base 10
         UART_putString((uint8_t*)str);
       }
     }
-  }else{ // buffered sampling
+  }else if(bytes_written < BUFFER_SIZE){ // buffered sampling
     // we read all the channels
     for(int i = 0; i < 8; i++) {
       if(bitmask & (1 << i)) {
-        //uint8_t value = ADC_read(i);
-
-        //itoa(value, str, 10); // Convert value to string, base 10
-        //UART_putString((uint8_t*)str);
+        uint8_t value = ADC_read(i);
+        buffer[bytes_written] = value;
+        bytes_written++;
       }
     }
-
-
+  }else if(bytes_written == BUFFER_SIZE){ // time to send the buffer
+    for(int i = 0; i < BUFFER_SIZE; i++){
+      itoa(buffer[i], str, 10); 
+      UART_putString((uint8_t*)str);
+    }
+    bytes_written = 0;
+    set_to_zero(buffer);
   }
 }
 // timer 5 init
