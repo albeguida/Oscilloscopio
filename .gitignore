@@ -1,4 +1,9 @@
+#oggetto
 *.o
 *.elf
-*.hex
+#testo
+*.txt
+#eseguibili
+*.exe
 *.x86_64
+*.hex
