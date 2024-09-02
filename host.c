@@ -187,37 +187,68 @@ int main(int argc, const char** argv) {
   FILE* data_file = fopen("data.txt", "a"); 
   printf("data.txt aperto\n");
   // scrivo in data.txt i dati ricevuti dalla seriale
-  char buffer[256]; 
+  char buffer[BUFFER_SIZE]; 
   int sample_counter = 0;
-  while (1) {
-    // scrivo nella prima colonna il numero di sample (formato gnuplot) --> work in progress per la correlazione con il tempo
-    fprintf(data_file, "%d ", sample_counter);
-    printf("sample_counter: %d\n", sample_counter);
-    
-    for (int i = 0; i < n_channels; i++) {
-      //leggo 1 byte alla volta che corrisponde al valore del canale
-        ssize_t bytes_read = read(fd, buffer, 1); 
-        printf("Buffer : %s\n",buffer); //DEBUG
-        if (bytes_read > 0) {
-            // scrivo il valore del canale nel file
-            if(i == n_channels - 1){
-              fprintf(data_file, "%d", buffer[0]); 
-            }else{
-              fprintf(data_file, "%d ", buffer[0]); 
-            }
-        }
+  if(mode == "1"){
+    while (1) {
+      // scrivo nella prima colonna il numero di sample (formato gnuplot) --> work in progress per la correlazione con il tempo
+      fprintf(data_file, "%d ", sample_counter);
+      printf("sample_counter: %d\n", sample_counter);
+      
+      for (int i = 0; i < n_channels; i++) {
+        //leggo 1 byte alla volta che corrisponde al valore del canale
+          ssize_t bytes_read = read(fd, buffer, 1); 
+          printf("Buffer : %s\n",buffer); //DEBUG
+          if (bytes_read > 0) {
+              // scrivo il valore del canale nel file
+              if(i == n_channels - 1){
+                fprintf(data_file, "%d", buffer[0]); 
+              }else{
+                fprintf(data_file, "%d ", buffer[0]); 
+              }
+          }
+      }
+      sample_counter++;
+      fprintf(data_file, "\n"); 
+      fflush(data_file); 
+      // lancio gnuplot per visualizzare i dati
+      if(sample_counter == 1){ // altrimenti errore in quanto data.txt è ancora vuoto
+        gnuplot_start(bitmask);
+      }
     }
-    sample_counter++;
-    fprintf(data_file, "\n"); 
-    fflush(data_file); 
-    // lancio gnuplot per visualizzare i dati
-    if(sample_counter == 1){ // altrimenti errore in quanto data.txt è ancora vuoto
-      gnuplot_start(bitmask);
+  }else{
+    //buffered mode
+    while(1){
+      // leggo i dati dalla seriale a blocchi
+      ssize_t bytes_read = read(fd, buffer, BUFFER_SIZE); 
+      //printf("Buffer : %s\n",buffer); //DEBUG
+      if (bytes_read > 0) {
+        // scrivo i dati nel file
+        for (int i = 0; i < bytes_read; i+=n_channels) {
+          fprintf(data_file, "%d ", sample_counter);
+          for(int j = 0; j < n_channels; j++){
+            // scrivo il valore del canale nel file
+            sample_counter++;
+            sprintf(buffer, "%d", buffer[i+j]);
+            if(i == bytes_read - 1){
+              fprintf(data_file, "%d", buffer[i+j]); 
+            }else{
+              fprintf(data_file, "%d ", buffer[i+j]); 
+            }
+            if(sample_counter == 1){ // altrimenti errore in quanto data.txt è ancora vuoto
+              gnuplot_start(bitmask);
+            }
+          }
+          fprintf(data_file, "\n"); 
+          fflush(data_file);
+        }
+         
+      }
     }
   }
   close(fd);
   fclose(data_file);
-
+  
   return 0;
 
 

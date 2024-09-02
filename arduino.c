@@ -19,7 +19,22 @@ volatile uint8_t current_pins;
 volatile uint8_t int_occurred=0;
 volatile uint16_t int_count=0;
 // interrupt routine for position PCINT0
-
+// DEBUG from SO_repository
+void led_blink(){
+const uint8_t mask=(1<<7);
+  // we configure the pin as output
+  DDRB |= mask;
+  int k=0;
+  while(1){
+    printf("led %d\n", (k&1));
+    if (k&1)
+      PORTB=mask;
+    else
+      PORTB=0;
+    _delay_ms(1000); // from delay.h, wait 1 sec
+    ++k;
+  }
+}
 ISR(PCINT0_vect) {
   previous_pins=current_pins;
   current_pins=PINB&PIN_MASK;
@@ -33,10 +48,12 @@ void trigger_wait(void){
   PORTB |= PIN_MASK; //enable pull up resistors
   PCICR |= (1 << PCIE0); // set interrupt on change, looking up PCMSK0
   PCMSK0 |= PIN_MASK;   // set PCINT0 to trigger an interrupt on state change 
+  //int_occurred=0;
   sei();
   while(1){
 
     if (int_occurred) {
+      int_occurred=0;
       break;
     }
     sleep_cpu();
@@ -119,29 +136,23 @@ void UART_putString(uint8_t* buf){
     ++buf;
   }
 }
-// DEBUG from SO_repository
-void led_blink(){
-const uint8_t mask=(1<<7);
-  // we configure the pin as output
-  DDRB |= mask;
-  int k=0;
-  while(1){
-    printf("led %d\n", (k&1));
-    if (k&1)
-      PORTB=mask;
-    else
-      PORTB=0;
-    _delay_ms(1000); // from delay.h, wait 1 sec
-    ++k;
-  }
-}
+
 void set_to_zero(uint8_t* buf){
   for(int i=0; i<20; i++){
     buf[i]=0;
   }
 }
+int count_channels(uint8_t bitmask) {
+  int n_channels = 0;
+  for (int i = 0; i < 8; i++) {
+    if (bitmask & (1 << i)) {
+      n_channels++;
+    }
+  }
+  return n_channels;
+}
 
-// our interrupt routine installed in
+// our interrupt routine installed in 
 // interrupt vector position
 // corresponding to output compare
 // of timer 5
@@ -149,6 +160,7 @@ void set_to_zero(uint8_t* buf){
 // channel bitmask, it is set in the main
 uint8_t bitmask;
 uint32_t bytes_written = 0;
+uint32_t n_channels;
 // ISR for timer 5
 ISR(TIMER5_COMPA_vect) {
   char str[5]; 
@@ -160,22 +172,19 @@ ISR(TIMER5_COMPA_vect) {
         UART_putString((uint8_t*)str);
       }
     }
-  }else if(bytes_written < BUFFER_SIZE){ // buffered sampling
+  }else if(bytes_written + n_channels < BUFFER_SIZE){ // buffered sampling
     // we read all the channels
     for(int i = 0; i < 8; i++) {
       if(bitmask & (1 << i)) {
         uint8_t value = ADC_read(i);
         buffer[bytes_written] = value;
         bytes_written++;
+      
       }
     }
-  }else if(bytes_written == BUFFER_SIZE){ // time to send the buffer
-    for(int i = 0; i < BUFFER_SIZE; i++){
-      itoa(buffer[i], str, 10); 
-      UART_putString((uint8_t*)str);
-    }
+  }else { // time to send the buffer
+    UART_putString(buffer);
     bytes_written = 0;
-    set_to_zero(buffer);
   }
 }
 // timer 5 init
@@ -188,7 +197,7 @@ void timer_init(const int timer_duration_ms){
   cli(); 
   TIMSK5 |= (1 << OCIE5A);  
   sei(); 
-}
+} 
 
 int main(void) {
     // init UART
@@ -207,6 +216,7 @@ int main(void) {
     if(mode[0] == '0') trigger_wait();
     // channels bitmask
     bitmask = atoi((const char *)channels);
+    n_channels = count_channels(bitmask);
     // init ADC and timer
     set_to_zero(buffer);
     ADC_init();
