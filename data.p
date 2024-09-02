@@ -27,7 +27,7 @@ total_samples = system(sprintf("wc -l < %s", file_name)) + 0
 min_sample = (total_samples > samples_to_display) ? total_samples - samples_to_display : 0
 max_sample = total_samples
 set xrange [min_sample:max_sample]
-set yrange [-10:10]
+set yrange [10:70]
 
 # plotto i canali
 do for [i=3:2+num_columns] {
