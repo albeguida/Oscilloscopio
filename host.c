@@ -172,8 +172,26 @@ int main(int argc, const char** argv) {
     fprintf(data_file, "\n"); 
     fflush(data_file); 
     // lancio gnuplot per visualizzare i dati
+    if(sample_counter == 1){
+    // preparo il comando da lanciare sulla shell, 
+    // passo i canali selezionati come parametri al file data.p di gnuplot
+    // così da lanciare i grafici corrispondenti
     char  gnuplot_params[256] = "gnuplot -c data.p data.txt";
-    system(gnuplot_params);
+    char n_col[20];
+    sprintf(n_col, " %d", n_channels);
+    // appendo il numero di canali/colonne al comando
+    strcat(gnuplot_params, n_col); 
+    for (int i = 0; i < 8; i++) {
+      if (bitmask & (1 << i)) {
+        char channel_param[5]; 
+        sprintf(channel_param, " %d", i);
+        //appendo i canali selezionati al comando
+        strcat(gnuplot_params, channel_param); 
+      }
+    }
+    // lancio gnuplot
+    system(gnuplot_params); 
+    }
   }
   close(fd);
   fclose(data_file);
