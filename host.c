@@ -149,17 +149,28 @@ int main(int argc, const char** argv) {
   printf("data.txt aperto\n");
   // scrivo in data.txt i dati ricevuti dalla seriale
   char buffer[256]; 
-  while (1) {    
+  int sample_counter = 0;
+  while (1) {
+    // scrivo nella prima colonna il numero di sample (formato gnuplot) --> work in progress per la correlazione con il tempo
+    fprintf(data_file, "%d ", sample_counter);
+    printf("sample_counter: %d\n", sample_counter);
+    
     for (int i = 0; i < n_channels; i++) {
       //leggo 1 byte alla volta che corrisponde al valore del canale
         ssize_t bytes_read = read(fd, buffer, 1); 
+        printf("Buffer : %s\n",buffer); //DEBUG
         if (bytes_read > 0) {
-        // scrivo il valore del canale nel file
-          fprintf(data_file, "%d ", buffer[0]); 
+            // scrivo il valore del canale nel file
+            if(i == n_channels - 1){
+              fprintf(data_file, "%d", buffer[0]); 
+            }else{
+              fprintf(data_file, "%d ", buffer[0]); 
+            }
         }
     }
+    sample_counter++;
     fprintf(data_file, "\n"); 
-    fflush(data_file);
+    fflush(data_file); 
   }
   close(fd);
   fclose(data_file);
