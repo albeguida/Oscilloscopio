@@ -171,6 +171,9 @@ int main(int argc, const char** argv) {
     sample_counter++;
     fprintf(data_file, "\n"); 
     fflush(data_file); 
+    // lancio gnuplot per visualizzare i dati
+    char  gnuplot_params[256] = "gnuplot -c data.p data.txt";
+    system(gnuplot_params);
   }
   close(fd);
   fclose(data_file);
