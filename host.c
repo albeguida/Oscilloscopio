@@ -95,6 +95,9 @@ int main(int argc, const char** argv) {
   const char * frequency = argv[5]; 
   const char * channels = argv[6]; 
 
+  // bitmask dei canali
+  uint8_t bitmask = atoi(channels);
+
   int fd = serial_open(serial_device);
   serial_set_interface_attribs(fd, baudrate, 0);
   serial_set_blocking(fd, 1);
@@ -131,10 +134,40 @@ int main(int argc, const char** argv) {
   read(fd, ack, sizeof(ack)); 
   printf("ACK channels: %s\n", ack);
 
-  return 0;
-  
-}
+  // Conto quanti canali sono stati selezionati
+  int n_channels = 0;
+  for (int i = 0; i < 8; i++) {
+    if (bitmask & (1 << i)) {
+      n_channels++;
+    }
+  }
+  // creo data.txt per salvare le letture dal canale / ne elimino, se già esistente, il contenuto
+  fclose(fopen("data.txt", "w"));
+  printf("data.txt azzerato\n");
+  // apro data.txt in append 
+  FILE* data_file = fopen("data.txt", "a"); 
+  printf("data.txt aperto\n");
+  // scrivo in data.txt i dati ricevuti dalla seriale
+  char buffer[256]; 
+  while (1) {    
+    for (int i = 0; i < n_channels; i++) {
+      //leggo 1 byte alla volta che corrisponde al valore del canale
+        ssize_t bytes_read = read(fd, buffer, 1); 
+        if (bytes_read > 0) {
+        // scrivo il valore del canale nel file
+          fprintf(data_file, "%d ", buffer[0]); 
+        }
+    }
+    fprintf(data_file, "\n"); 
+    fflush(data_file);
+  }
+  close(fd);
+  fclose(data_file);
 
+  return 0;
+
+
+}
 
   
 
