@@ -80,6 +80,47 @@ int serial_open(const char* name) {
   return fd;
 }
 
+int count_channels(uint8_t bitmask) {
+  int n_channels = 0;
+  for (int i = 0; i < 8; i++) {
+    if (bitmask & (1 << i)) {
+      n_channels++;
+    }
+  }
+  return n_channels;
+}
+void gnuplot_start(uint8_t bitmask){
+// preparo il comando da lanciare sulla shell, 
+    // passo i canali selezionati come parametri al file data.p di gnuplot
+    // così da lanciare i grafici corrispondenti
+    char  gnuplot_params[256] = "gnuplot -c data.p data.txt";
+    char n_col[20];
+    int n_channels = count_channels(bitmask);
+    sprintf(n_col, " %d", n_channels);
+    // appendo il numero di canali/colonne al comando
+    strcat(gnuplot_params, n_col); 
+    for (int i = 0; i < 8; i++) {
+      if (bitmask & (1 << i)) {
+        char channel_param[5]; 
+        sprintf(channel_param, " %d", i);
+        //appendo i canali selezionati al comando
+        strcat(gnuplot_params, channel_param); 
+      }
+    }
+    // lancio gnuplot tramite fork, così da non bloccare il main
+    pid_t pid = fork();
+    if(pid == 0){
+      printf("avvio gnuplot\n");
+      system(gnuplot_params);
+      exit(0);
+    }else if(pid > 0){
+      printf("parent process\n");
+    }else if(pid < 0){
+      printf("fork failed\n");
+    }
+}
+
+
 int main(int argc, const char** argv) {
   if (argc < 7) { // Adjusted for additional arguments
     printf("Usage: serial_linux <serial_file> <baudrate> <read=1, write=0> <mode> <frequency> <channels>\n");
@@ -135,12 +176,7 @@ int main(int argc, const char** argv) {
   printf("ACK channels: %s\n", ack);
 
   // Conto quanti canali sono stati selezionati
-  int n_channels = 0;
-  for (int i = 0; i < 8; i++) {
-    if (bitmask & (1 << i)) {
-      n_channels++;
-    }
-  }
+  int n_channels = count_channels(bitmask);
   // creo data.txt per salvare le letture dal canale / ne elimino, se già esistente, il contenuto
   fclose(fopen("data.txt", "w"));
   printf("data.txt azzerato\n");
@@ -172,34 +208,8 @@ int main(int argc, const char** argv) {
     fprintf(data_file, "\n"); 
     fflush(data_file); 
     // lancio gnuplot per visualizzare i dati
-    if(sample_counter == 1){
-    // preparo il comando da lanciare sulla shell, 
-    // passo i canali selezionati come parametri al file data.p di gnuplot
-    // così da lanciare i grafici corrispondenti
-    char  gnuplot_params[256] = "gnuplot -c data.p data.txt";
-    char n_col[20];
-    sprintf(n_col, " %d", n_channels);
-    // appendo il numero di canali/colonne al comando
-    strcat(gnuplot_params, n_col); 
-    for (int i = 0; i < 8; i++) {
-      if (bitmask & (1 << i)) {
-        char channel_param[5]; 
-        sprintf(channel_param, " %d", i);
-        //appendo i canali selezionati al comando
-        strcat(gnuplot_params, channel_param); 
-      }
-    }
-    // lancio gnuplot
-    pid_t pid = fork();
-    if(pid == 0){
-      printf("avvio gnuplot\n");
-      system(gnuplot_params); // Execute the Gnuplot command
-      exit(0);
-    }else if(pid > 0){
-      printf("parent process\n");
-    }else if(pid < 0){
-      printf("fork failed\n");
-    }
+    if(sample_counter == 1){ // altrimenti errore in quanto data.txt è ancora vuoto
+      gnuplot_start(bitmask);
     }
   }
   close(fd);
