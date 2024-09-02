@@ -116,10 +116,12 @@ uint8_t bitmask;
 
 // ISR for timer 5
 ISR(TIMER5_COMPA_vect) {
+  char str[5]; 
   for(int i = 0; i < 8; i++) {
     if(bitmask & (1 << i)) {
-      uint8_t value = ADC_read(i); 
-      UART_putString(&value);
+      uint8_t value = ADC_read(i);
+      itoa(value, str, 10); // Convert value to string, base 10
+      UART_putString((uint8_t*)str);
     }
   }
 }
@@ -154,7 +156,7 @@ int main(void) {
     // init ADC and timer
 
     ADC_init();
-    timer_init((1/((uint32_t)atoi((char*)frequency))));
+    timer_init((1/((uint32_t)atoi((char*)frequency)))*1000);
     while(1) {
       sleep_cpu(); // sleep until interrupt
     }

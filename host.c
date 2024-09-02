@@ -11,6 +11,9 @@
 #include <stdint.h>
 //#include <iostream>
 #include <stdlib.h>
+
+#define BUFFER_SIZE 256
+
 int serial_set_interface_attribs(int fd, int speed, int parity) {
   struct termios tty;
   memset (&tty, 0, sizeof tty);
