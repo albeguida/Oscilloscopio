@@ -22,7 +22,7 @@ if (num_columns > 1) {
 }
 clear
 
-samples_to_display = 50
+samples_to_display = 100
 total_samples = system(sprintf("wc -l < %s", file_name)) + 0  
 min_sample = (total_samples > samples_to_display) ? total_samples - samples_to_display : 0
 max_sample = total_samples

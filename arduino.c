@@ -7,10 +7,42 @@
 #include <avr/sleep.h>
 #define BAUD 19200
 #define MYUBRR (F_CPU/16/BAUD-1)
+#define BUFFER_SIZE 1024
+#define PIN_MASK 0x0F // last four bit of PORT B (50-53)
+
 uint8_t mode[20];
 uint8_t frequency[20];
 uint8_t channels[20];
+uint8_t buffer[BUFFER_SIZE];
+volatile uint8_t previous_pins;
+volatile uint8_t current_pins;
+volatile uint8_t int_occurred=0;
+volatile uint16_t int_count=0;
+// interrupt routine for position PCINT0
 
+ISR(PCINT0_vect) {
+  previous_pins=current_pins;
+  current_pins=PINB&PIN_MASK;
+  int_occurred=1;
+  int_count=1;
+}
+
+
+void trigger_wait(void){
+  DDRB &= ~PIN_MASK; //set PIN_MASK pins as input
+  PORTB |= PIN_MASK; //enable pull up resistors
+  PCICR |= (1 << PCIE0); // set interrupt on change, looking up PCMSK0
+  PCMSK0 |= PIN_MASK;   // set PCINT0 to trigger an interrupt on state change 
+  sei();
+  while(1){
+
+    if (int_occurred) {
+      break;
+    }
+    //sleep_cpu();
+  }
+  return;
+}
 void ADC_init(void) {
     // V_ref=AVcc
     ADMUX |= (1<<REFS0) | (1<<ADLAR);
@@ -103,26 +135,43 @@ const uint8_t mask=(1<<7);
     ++k;
   }
 }
-
+void set_to_zero(uint8_t* buf){
+  for(int i=0; i<20; i++){
+    buf[i]=0;
+  }
+}
 
 // our interrupt routine installed in
 // interrupt vector position
 // corresponding to output compare
 // of timer 5
 
-uint16_t int_count=1;
 // channel bitmask, it is set in the main
 uint8_t bitmask;
 
 // ISR for timer 5
 ISR(TIMER5_COMPA_vect) {
   char str[5]; 
-  for(int i = 0; i < 8; i++) {
-    if(bitmask & (1 << i)) {
-      uint8_t value = ADC_read(i);
-      itoa(value, str, 10); // Convert value to string, base 10
-      UART_putString((uint8_t*)str);
+  if(mode[0] == '1'){ // continuous sampling
+    for(int i = 0; i < 8; i++) {
+      if(bitmask & (1 << i)) {
+        uint8_t value = ADC_read(i);
+        itoa(value, str, 10); // Convert value to string, base 10
+        UART_putString((uint8_t*)str);
+      }
     }
+  }else{ // buffered sampling
+    // we read all the channels
+    for(int i = 0; i < 8; i++) {
+      if(bitmask & (1 << i)) {
+        //uint8_t value = ADC_read(i);
+
+        //itoa(value, str, 10); // Convert value to string, base 10
+        //UART_putString((uint8_t*)str);
+      }
+    }
+
+
   }
 }
 // timer 5 init
@@ -150,11 +199,12 @@ int main(void) {
 
     while(UART_getString(channels) < 1);
     UART_putString(channels);
-
+    // aspetto che l'utente disturba uno dei pin 50-53 --> funge da trigger
+    if(mode[0] == '0') trigger_wait();
     // channels bitmask
     bitmask = atoi((const char *)channels);
     // init ADC and timer
-
+    set_to_zero(buffer);
     ADC_init();
     timer_init((1/((uint32_t)atoi((char*)frequency)))*1000);
     while(1) {
