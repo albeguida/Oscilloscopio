@@ -190,7 +190,16 @@ int main(int argc, const char** argv) {
       }
     }
     // lancio gnuplot
-    system(gnuplot_params); 
+    pid_t pid = fork();
+    if(pid == 0){
+      printf("avvio gnuplot\n");
+      system(gnuplot_params); // Execute the Gnuplot command
+      exit(0);
+    }else if(pid > 0){
+      printf("parent process\n");
+    }else if(pid < 0){
+      printf("fork failed\n");
+    }
     }
   }
   close(fd);
