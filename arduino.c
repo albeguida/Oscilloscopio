@@ -96,8 +96,11 @@ ISR(TIMER5_COMPA_vect) {
 // timer 5 init
 void timer_init(const int timer_duration_ms){
   TCCR5A = 0;
-  TCCR5B = (1 << WGM52) | (1 << CS50) | (1 << CS52); 
-  uint16_t ocrval=(uint16_t)(15.62*timer_duration_ms);
+  //TCCR5B = (1 << WGM52) | (1 << CS50) | (1 << CS52); 
+  TCCR5B = (1 << WGM52) | (1 << CS51);
+  
+  //prescaler 8
+  uint16_t ocrval=(uint16_t)(2000*timer_duration_ms);
 
   OCR5A = ocrval;
   cli(); 

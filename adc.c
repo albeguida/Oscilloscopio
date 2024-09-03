@@ -4,8 +4,8 @@
 void ADC_init(void) {
     // V_ref=AVcc
     ADMUX |= (1<<REFS0) | (1<<ADLAR);
-    //prescaler 128, enable ADC 
-    ADCSRA |= (1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0)|(1<<ADEN);    
+    //prescaler 8, enable ADC 
+    ADCSRA |= (1<<ADPS0)|(1<<ADEN);
 }
 
 uint8_t ADC_read(uint8_t ch) {
