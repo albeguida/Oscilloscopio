@@ -126,11 +126,12 @@ int main(int argc, const char** argv) {
             }else{
               fprintf(data_file, "%d ", (int)buffer[i+j]); 
             }
-            if(sample_counter == 1){ // altrimenti errore in quanto data.txt è ancora vuoto
-              gnuplot_start(bitmask);
-            }
+
           }
           sample_counter++;
+          if(sample_counter == 1){ // altrimenti errore in quanto data.txt è ancora vuoto
+            gnuplot_start(bitmask);
+            }
           fprintf(data_file, "\n"); 
           fflush(data_file);
         }
