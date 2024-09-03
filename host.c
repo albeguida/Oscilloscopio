@@ -1,4 +1,4 @@
-#include "host.h"
+#include "serial_linux.h"
 #include <errno.h>
 #include <termios.h>
 #include <unistd.h>
@@ -9,120 +9,11 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdint.h>
+#include "gnuplot.h"
 //#include <iostream>
 #include <stdlib.h>
 
 #define BUFFER_SIZE 1024
-
-int serial_set_interface_attribs(int fd, int speed, int parity) {
-  struct termios tty;
-  memset (&tty, 0, sizeof tty);
-  if (tcgetattr (fd, &tty) != 0) {
-    printf ("error %d from tcgetattr", errno);
-    return -1;
-  }
-  switch (speed){
-  case 19200:
-    speed=B19200;
-    break;
-  case 57600:
-    speed=B57600;
-    break;
-  case 115200:
-    speed=B115200;
-    break;
-  case 230400:
-    speed=B230400;
-    break;
-  case 576000:
-    speed=B576000;
-    break;
-  case 921600:
-    speed=B921600;
-    break;
-  default:
-    printf("cannot sed baudrate %d\n", speed);
-    return -1;
-  }
-  cfsetospeed (&tty, speed);
-  cfsetispeed (&tty, speed);
-  cfmakeraw(&tty);
-  // enable reading
-  tty.c_cflag &= ~(PARENB | PARODD);               // shut off parity
-  tty.c_cflag |= parity;
-  tty.c_cflag = (tty.c_cflag & ~CSIZE) | CS8;      // 8-bit chars
-
-  if (tcsetattr (fd, TCSANOW, &tty) != 0) {
-    printf ("error %d from tcsetattr", errno);
-    return -1;
-  }
-  tcflush(fd, TCIOFLUSH);
-  return 0;
-}
-
-void serial_set_blocking(int fd, int should_block) {
-  struct termios tty;
-  memset (&tty, 0, sizeof tty);
-  if (tcgetattr (fd, &tty) != 0) {
-      printf ("error %d from tggetattr", errno);
-      return;
-  }
-
-  tty.c_cc[VMIN]  = should_block ? 1 : 0;
-  tty.c_cc[VTIME] = 5;            // 0.5 seconds read timeout
-
-  if (tcsetattr (fd, TCSANOW, &tty) != 0)
-    printf ("error %d setting term attributes", errno);
-}
-
-int serial_open(const char* name) {
-  int fd = open (name, O_RDWR | O_NOCTTY | O_SYNC );
-  if (fd < 0) {
-    printf ("error %d opening serial, fd %d\n", errno, fd);
-  }
-  return fd;
-}
-
-int count_channels(uint8_t bitmask) {
-  int n_channels = 0;
-  for (int i = 0; i < 8; i++) {
-    if (bitmask & (1 << i)) {
-      n_channels++;
-    }
-  }
-  return n_channels;
-}
-void gnuplot_start(uint8_t bitmask){
-// preparo il comando da lanciare sulla shell, 
-    // passo i canali selezionati come parametri al file data.p di gnuplot
-    // così da lanciare i grafici corrispondenti
-    char  gnuplot_params[256] = "gnuplot -c data.p data.txt";
-    char n_col[20];
-    int n_channels = count_channels(bitmask);
-    sprintf(n_col, " %d", n_channels);
-    // appendo il numero di canali/colonne al comando
-    strcat(gnuplot_params, n_col); 
-    for (int i = 0; i < 8; i++) {
-      if (bitmask & (1 << i)) {
-        char channel_param[5]; 
-        sprintf(channel_param, " %d", i);
-        //appendo i canali selezionati al comando
-        strcat(gnuplot_params, channel_param); 
-      }
-    }
-    // lancio gnuplot tramite fork, così da non bloccare il main
-    pid_t pid = fork();
-    if(pid == 0){
-      printf("avvio gnuplot\n");
-      system(gnuplot_params);
-      exit(0);
-    }else if(pid > 0){
-      printf("parent process\n");
-    }else if(pid < 0){
-      printf("fork failed\n");
-    }
-}
-
 
 int main(int argc, const char** argv) {
   if (argc < 7) { // Adjusted for additional arguments

@@ -29,10 +29,10 @@ BINS=arduino.o
 
 # put here the additional .o files you want to generate
 # one .c file for each .o should be present
-OBJS=
+OBJS=uart.o utils.o adc.o
 
 # put here the additional header files needed for compilation
-HEADERS=../avr_common/uart.h serial_linux.h
+HEADERS= uart.h utils.h adc.h
 
 # the file below contains the actual rules
 
