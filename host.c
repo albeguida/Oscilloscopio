@@ -13,7 +13,7 @@
 //#include <iostream>
 #include <stdlib.h>
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 128
 
 int main(int argc, const char** argv) {
   if (argc < 7) { // Adjusted for additional arguments
@@ -109,28 +109,28 @@ int main(int argc, const char** argv) {
     }
   }else{
     //buffered mode
+    int i=0,j=0;
     while(1){
       // leggo i dati dalla seriale a blocchi
       printf("Reading from serial\n");
       ssize_t bytes_read = read(fd, buffer, BUFFER_SIZE); 
-      printf("Buffer : %s\n",buffer); //DEBUG
+      //printf("Buffer : %\n",buffer); //DEBUG
       if (bytes_read > 0) {
         // scrivo i dati nel file
-        for (int i = 0; i < bytes_read; i+=n_channels) {
+        for (i = 0; i < bytes_read; i+=n_channels) {
           fprintf(data_file, "%d ", sample_counter);
-          for(int j = 0; j < n_channels; j++){
+          for(j = 0; j < n_channels; j++){
             // scrivo il valore del canale nel file
-            sample_counter++;
-            sprintf(buffer, "%d", buffer[i+j]);
             if(i == bytes_read - 1){
-              fprintf(data_file, "%d", buffer[i+j]); 
+              fprintf(data_file, "%d", (int)buffer[i+j]); 
             }else{
-              fprintf(data_file, "%d ", buffer[i+j]); 
+              fprintf(data_file, "%d ", (int)buffer[i+j]); 
             }
             if(sample_counter == 1){ // altrimenti errore in quanto data.txt è ancora vuoto
               gnuplot_start(bitmask);
             }
           }
+          sample_counter++;
           fprintf(data_file, "\n"); 
           fflush(data_file);
         }

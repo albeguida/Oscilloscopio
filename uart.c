@@ -5,7 +5,6 @@
 #include "uart.h"
 #define BAUD 19600
 #define MYUBRR (F_CPU/16/BAUD-1)
-
 void UART_init(void){
   // Set baud rate
   UBRR0H = (uint8_t)(MYUBRR>>8);
@@ -58,5 +57,12 @@ void UART_putString(uint8_t* buf){
   while(*buf){
     UART_putChar(*buf);
     ++buf;
+  }
+}
+void UART_putBuffer(uint8_t* buf, uint32_t size){
+  uint32_t i=0;
+  while(i<size){
+    UART_putChar(buf[i]);
+    ++i;
   }
 }

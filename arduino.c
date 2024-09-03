@@ -10,7 +10,7 @@
 #include <adc.h>  
 #define BAUD 19200
 #define MYUBRR (F_CPU/16/BAUD-1)
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 128
 #define PIN_MASK 0x0F // last four bit of PORT B (50-53)
 
 uint8_t mode[20];
@@ -62,17 +62,16 @@ uint32_t bytes_written = 0;
 uint32_t n_channels;
 // ISR for timer 5
 ISR(TIMER5_COMPA_vect) {
-  char str[5]; 
   if(mode[0] == '1'){ // continuous sampling
     for(int i = 0; i < 8; i++) {
       if(bitmask & (1 << i)) {
         uint8_t value = ADC_read(i);
         //itoa(value, str, 10); // convert value to string, base 10
         //UART_putString((uint8_t*)str);
-        UART_putChar(value);
+        UART_putChar(value); 
       } 
     }
-  }else if(bytes_written + n_channels < BUFFER_SIZE){ // buffered sampling
+  }else if(bytes_written + n_channels < BUFFER_SIZE / 4){ // buffered sampling
     // we read all the channels
     for(int i = 0; i < 8; i++) {
       if(bitmask & (1 << i)) {
@@ -83,8 +82,17 @@ ISR(TIMER5_COMPA_vect) {
       }
     }
   }else { // time to send the buffer
-    UART_putString(buffer);
+    UART_putBuffer(buffer, bytes_written);
     bytes_written = 0;
+    for(int i = 0; i < 8; i++) {
+      if(bitmask & (1 << i)) {
+        uint8_t value = ADC_read(i);
+        buffer[bytes_written+i] = value;
+        bytes_written++;
+      
+      }
+    }
+
   }
 }
 // timer 5 init
