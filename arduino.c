@@ -66,8 +66,6 @@ ISR(TIMER5_COMPA_vect) {
     for(int i = 0; i < 8; i++) {
       if(bitmask & (1 << i)) {
         uint8_t value = ADC_read(i);
-        //itoa(value, str, 10); // convert value to string, base 10
-        //UART_putString((uint8_t*)str);
         UART_putChar(value); 
       } 
     }
