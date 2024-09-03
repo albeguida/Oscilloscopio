@@ -93,9 +93,9 @@ int main(int argc, const char** argv) {
           if (bytes_read > 0) {
               // scrivo il valore del canale nel file
               if(i == n_channels - 1){
-                fprintf(data_file, "%d", buffer[0]); 
+                fprintf(data_file, "%d", (int)buffer[0]); 
               }else{
-                fprintf(data_file, "%d ", buffer[0]); 
+                fprintf(data_file, "%d ", (int)buffer[0]); 
               }
           }
       }
@@ -111,8 +111,9 @@ int main(int argc, const char** argv) {
     //buffered mode
     while(1){
       // leggo i dati dalla seriale a blocchi
+      printf("Reading from serial\n");
       ssize_t bytes_read = read(fd, buffer, BUFFER_SIZE); 
-      //printf("Buffer : %s\n",buffer); //DEBUG
+      printf("Buffer : %s\n",buffer); //DEBUG
       if (bytes_read > 0) {
         // scrivo i dati nel file
         for (int i = 0; i < bytes_read; i+=n_channels) {
