@@ -80,7 +80,7 @@ int main(int argc, const char** argv) {
   // scrivo in data.txt i dati ricevuti dalla seriale
   char buffer[BUFFER_SIZE]; 
   int sample_counter = 0;
-  if(mode == "1"){
+  if(mode[0] == '1'){
     while (1) {
       // scrivo nella prima colonna il numero di sample (formato gnuplot) --> work in progress per la correlazione con il tempo
       fprintf(data_file, "%d ", sample_counter);
